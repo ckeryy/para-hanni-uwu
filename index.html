@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logro de Minecraft - Mesversario</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #573d26;
+            background-image: 
+                linear-gradient(45deg, #422d1b 25%, transparent 25%), 
+                linear-gradient(-45deg, #422d1b 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #422d1b 75%), 
+                linear-gradient(-45deg, transparent 75%, #422d1b 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            padding: 10px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%);
+            z-index: 1;
+        }
+
+        /* PANTALLA 1: BLOQUEO */
+        .welcome-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(33, 33, 33, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            z-index: 100;
+            opacity: 1;
+            transition: opacity 0.8s ease-out, visibility 0.8s ease-out;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .welcome-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .welcome-card {
+            background-color: #212121;
+            border: 3px solid #555555;
+            box-shadow: inset -3px -3px 0px #111111, inset 3px 3px 0px #888888;
+            padding: 20px;
+            border-radius: 4px;
+            max-width: 340px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .welcome-title {
+            color: #FFFF55;
+            font-size: 10px;
+            line-height: 1.6;
+            text-shadow: 2px 2px 0px #3F3F00;
+        }
+
+        .name-input {
+            background-color: #000000;
+            border: 2px solid #555555;
+            color: #55FF55;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            outline: none;
+            box-shadow: inset 2px 2px 0px #111111;
+        }
+
+        .error-message {
+            color: #FF5555;
+            font-size: 8px;
+            display: none;
+            text-shadow: 1px 1px 0px #3F0000;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        /* PANTALLA 2: CONTENIDO DE LOGRO */
+        .main-content {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .main-content.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* PANTALLA 3: GALERÍA DE IMÁGENES */
+        .gallery-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+
+        .gallery-screen.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .gallery-header-img {
+            width: 75%;
+            max-width: 220px;
+            height: auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            margin-bottom: 15px;
+            filter: drop-shadow(2px 2px 0px #000);
+        }
+
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(1, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+
+        .gallery-img {
+            width: 100%;
+            max-height: 250px;
+            object-fit: cover;
+            border: 3px solid #555555;
+            box-shadow: inset -2px -2px 0px #111111, inset 2px 2px 0px #888888;
+            border-radius: 4px;
+        }
+
+        /* EFECTOS Y ELEMENTOS GENERALES */
+        .level-up-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(85, 255, 85, 0.25);
+            pointer-events: none;
+            z-index: 99;
+            opacity: 0;
+        }
+
+        .level-up-flash.active {
+            animation: flashAnim 0.4s ease-out;
+        }
+
+        @keyframes flashAnim {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+
+        .falling-pixel-heart {
+            position: fixed;
+            top: -30px;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 1;
+            will-change: transform, opacity;
+            animation: fallHeart linear forwards;
+        }
+
+        .falling-pixel-heart svg {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        @keyframes fallHeart {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            80% { opacity: 0.8; }
+            100% {
+                transform: translateY(105vh) rotate(180deg);
+                opacity: 0;
+            }
+        }
+
+        .bg-block {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(66, 45, 27, 0.4);
+            border: 2px solid rgba(87, 61, 38, 0.6);
+            pointer-events: none;
+            z-index: 0;
+            will-change: transform, opacity;
+            animation: floatBlock linear infinite;
+        }
+
+        @keyframes floatBlock {
+            0% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+            10% { opacity: 0.4; }
+            90% { opacity: 0.4; }
+            100% {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            z-index: 2;
+            position: relative;
+            width: 100%;
+            max-width: 380px;
+            margin: 0 auto;
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+
+        .header-sub-img {
+            width: 55%;
+            max-width: 160px;
+            height: auto;
+            display: block;
+            margin: 0 auto 10px auto;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            animation: floatTitle 3s ease-in-out infinite alternate;
+        }
+
+        .header-title {
+            color: #FF5555;
+            font-size: 18px;
+            text-align: center;
+            text-shadow: 3px 3px 0px #000;
+            animation: floatTitle 3s ease-in-out infinite alternate;
+            margin-bottom: 2px;
+        }
+
+        .header-subtitle {
+            color: #FFFF55;
+            font-size: 12px;
+            text-align: center;
+            text-shadow: 2px 2px 0px #000;
+            animation: floatTitle 3s ease-in-out 0.5s infinite alternate;
+            margin-bottom: 10px;
+        }
+
+        @keyframes floatTitle {
+            0% { transform: translateY(0px); }
+            100% { transform: translateY(-6px); }
+        }
+
+        .music-btn {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+            background: #212121;
+            border: 2px solid #555;
+            color: #FFF;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            box-shadow: inset -2px -2px 0 #111, inset 2px 2px 0 #888;
+        }
+
+        .secret-message {
+            display: none;
+            opacity: 0;
+            background: #c6b284;
+            color: #2c1a0a;
+            padding: 12px;
+            font-size: 9px;
+            line-height: 1.5;
+            text-align: center;
+            border-radius: 4px;
+            border: 3px solid #3c2a1a;
+            box-shadow: inset -2px -2px 0 #8c764b, inset 2px 2px 0 #e6d4aa;
+            width: 100%;
+            transition: opacity 0.4s ease-in;
+        }
+
+        .secret-message.visible {
+            display: block;
+            opacity: 1;
+        }
+
+        .achievement-card {
+            background-color: #212121;
+            border: 3px solid #555555;
+            box-shadow: inset -3px -3px 0px #111111, inset 3px 3px 0px #888888;
+            padding: 10px 12px;
+            display: flex;
+            align-items: center;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .achievement-card.unlocked {
+            animation: unlockedGlow 1.8s infinite alternate ease-in-out;
+        }
+
+        @keyframes unlockedGlow {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.02); }
+        }
+
+        .splash-text {
+            position: absolute;
+            top: -10px;
+            right: 5px;
+            color: #FFFF55;
+            font-size: 8px;
+            text-shadow: 1px 1px 0px #3F3F00;
+            transform: rotate(-8deg);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .pixel-heart {
+            width: 32px;
+            height: 32px;
+            margin-right: 10px;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            flex-shrink: 0;
+        }
+
+        .achievement-card.unlocked .pixel-heart {
+            animation: heartBeat 1.2s infinite ease-in-out;
+        }
+
+        @keyframes heartBeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.12); }
+        }
+
+        .achievement-text {
+            color: #FFFFFF;
+            font-size: 9px;
+            line-height: 1.4;
+        }
+
+        .achievement-title {
+            color: #FFFF55;
+            text-shadow: 1px 1px 0px #3F3F00;
+            margin-bottom: 3px;
+        }
+
+        .achievement-desc {
+            color: #FFFFFF;
+            text-shadow: 1px 1px 0px #2A2A2A;
+        }
+
+        .hud-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 100%;
+        }
+
+        .counter-box {
+            background-color: #313131;
+            border: 2px solid #000000;
+            box-shadow: inset 2px 2px 0px #555555, inset -2px -2px 0px #151515;
+            padding: 5px 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 2px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .counter-icon {
+            color: #55FF55;
+            font-size: 10px;
+        }
+
+        .counter-badge {
+            font-size: 8px;
+            color: #55FF55;
+        }
+
+        .xp-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: #000;
+            border: 2px solid #3c3c3c;
+            position: relative;
+            overflow: hidden;
+            border-radius: 2px;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: #55FF55;
+            transition: width 0.8s ease-out;
+        }
+
+        .xp-particle {
+            position: fixed;
+            pointer-events: none;
+            border-radius: 2px;
+            z-index: 10;
+            animation: moveParticle 0.8s linear forwards;
+        }
+
+        @keyframes moveParticle {
+            0% {
+                opacity: 1;
+                transform: translate(0, 0);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(var(--dx), var(--dy));
+            }
+        }
+
+        .mc-button {
+            background-color: #707070;
+            border: 3px solid #000000;
+            box-shadow: inset 3px 3px 0px #a8a8a8, inset -3px -3px 0px #383838;
+            color: #E0E0E0;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            padding: 10px 16px;
+            cursor: pointer;
+            text-shadow: 1px 1px 0px #000000;
+            user-select: none;
+            width: 100%;
+        }
+
+        .mc-button:active:not(:disabled) {
+            transform: translateY(2px);
+        }
+
+        .mc-button:disabled {
+            background-color: #4a4a4a;
+            color: #888888;
+            cursor: default;
+            box-shadow: inset 3px 3px 0px #333333, inset -3px -3px 0px #222222;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="overlay"></div>
+    <div class="level-up-flash" id="flash"></div>
+
+    <button class="music-btn" id="btnMusic">🎵 BGM: OFF</button>
+    <audio id="bgMusic" src="https://github.com/ckeryy/te-amo/raw/refs/heads/main/TikVid.io_7611706347444309262.mp3" loop preload="none"></audio>
+
+    <!-- PANTALLA 1: BLOQUEO POR NOMBRE -->
+    <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-card">
+            <p class="welcome-title">Esto se desbloquea con tu nombre:</p>
+            <input type="text" id="nameInput" class="name-input" placeholder="Escribe tu nombre..." autocomplete="off">
+            <p class="error-message" id="errorMessage">Nombre incorrecto</p>
+        </div>
+        <button class="mc-button" id="btnStart" style="width: auto; padding: 12px 20px;">Desbloquear</button>
+    </div>
+
+    <!-- PANTALLA 2: PANTALLA DE LOGRO Y CARTA -->
+    <div class="main-content" id="mainContent">
+        <div class="container">
+            <img src="https://raw.githubusercontent.com/ckeryy/ck/refs/heads/main/a4a7b6d2-4eee-4b2a-bcf0-a6b0556d1b4c.png" alt="Detalle Hanni" class="header-sub-img">
+
+            <h1 class="header-title">TE AMO HANNI</h1>
+            <h2 class="header-subtitle">❤️ 2do MES ❤️</h2>
+
+            <div class="secret-message" id="secretMessage">
+                ✉️ Carta de Inventario:<br><br>
+                <span id="typedText"></span>
+            </div>
+
+            <div class="achievement-card" id="achievementCard">
+                <div class="splash-text" id="splashText">¡Player 2 Conectado!</div>
+                
+                <svg class="pixel-heart" viewBox="0 0 9 9" fill="none">
+                    <path d="M2 1H4V2H2V1Z" fill="#000000"/>
+                    <path d="M5 1H7V2H5V1Z" fill="#000000"/>
+                    <path d="M1 2H2V4H1V2Z" fill="#000000"/>
+                    <path d="M4 2H5V3H4V2Z" fill="#000000"/>
+                    <path d="M7 2H8V4H7V2Z" fill="#000000"/>
+                    <path d="M0 3H1V5H0V3Z" fill="#000000"/>
+                    <path d="M8 3H9V5H8V3Z" fill="#000000"/>
+                    <path d="M1 5H2V6H1V5Z" fill="#000000"/>
+                    <path d="M7 5H8V6H7V5Z" fill="#000000"/>
+                    <path d="M2 6H3V7H2V6Z" fill="#000000"/>
+                    <path d="M6 6H7V7H6V6Z" fill="#000000"/>
+                    <path d="M3 7H4V8H3V7Z" fill="#000000"/>
+                    <path d="M5 7H6V8H5V7Z" fill="#000000"/>
+                    <path d="M4 8H5V9H4V8Z" fill="#000000"/>
+
+                    <path d="M2 2H4V3H2V2Z" fill="#FF0000"/>
+                    <path d="M5 2H7V3H5V2Z" fill="#FF0000"/>
+                    <path d="M1 3H8V5H1V3Z" fill="#FF0000"/>
+                    <path d="M2 5H7V6H2V5Z" fill="#FF0000"/>
+                    <path d="M3 6H6V7H3V6Z" fill="#FF0000"/>
+                    <path d="M4 7H5V8H4V7Z" fill="#FF0000"/>
+
+                    <path d="M2 2H3V3H2V2Z" fill="#FFFFFF"/>
+                    <path d="M1 3H2V4H1V3Z" fill="#FFFFFF"/>
+                </svg>
+
+                <div class="achievement-text">
+                    <p class="achievement-title">¡Logro obtenido!</p>
+                    <p class="achievement-desc">Segundo mes juntos completado</p>
+                </div>
+            </div>
+
+            <div class="hud-wrapper">
+                <div class="counter-box">
+                    <span class="counter-icon">60</span>
+                    <span class="counter-badge" id="counterText">DÍAS JUNTOS | XP 0%</span>
+                </div>
+                <div class="xp-bar-container">
+                    <div class="xp-bar-fill" id="xpBarFill"></div>
+                </div>
+            </div>
+
+            <button class="mc-button" id="btnAchievement">¡Obtener Logro!</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA 3: GALERÍA FINAL -->
+    <div class="gallery-screen" id="galleryScreen">
+        <div class="container">
+            <img src="https://raw.githubusercontent.com/ckeryy/hyc/refs/heads/main/1011a174-cd6e-4881-8897-be4c8ff5bd63.png" alt="Título Galería" class="gallery-header-img">
+            
+            <div class="gallery-grid">
+                <img src="https://raw.githubusercontent.com/ckeryy/hyc/refs/heads/main/IMG-20260916-WA0037.jpg" alt="Momento 1" class="gallery-img">
+                <img src="https://raw.githubusercontent.com/ckeryy/hyc/refs/heads/main/IMG_20260927_150652.jpg" alt="Momento 2" class="gallery-img">
+            </div>
+
+            <button class="mc-button" id="btnBack" style="margin-top: 20px;">⬅ Volver al Logro</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let audioCtx = null;
+            let isUnlocked = false;
+
+            const welcomeScreen = document.getElementById('welcomeScreen');
+            const btnStart = document.getElementById('btnStart');
+            const nameInput = document.getElementById('nameInput');
+            const errorMessage = document.getElementById('errorMessage');
+
+            const mainContent = document.getElementById('mainContent');
+            const galleryScreen = document.getElementById('galleryScreen');
+
+            const card = document.getElementById('achievementCard');
+            const btn = document.getElementById('btnAchievement');
+            const btnBack = document.getElementById('btnBack');
+            const secretMsg = document.getElementById('secretMessage');
+            const btnMusic = document.getElementById('btnMusic');
+            const bgMusic = document.getElementById('bgMusic');
+            const xpBarFill = document.getElementById('xpBarFill');
+            const counterText = document.getElementById('counterText');
+            const splashText = document.getElementById('splashText');
+            const flash = document.getElementById('flash');
+            const typedText = document.getElementById('typedText');
+
+            const fullText = "¡Gracias por un mes más juntos! Eres mi player 2 favorito :3";
+            const xpColors = ['#55FF55', '#70FF00', '#FFFF55'];
+            const splashes = ['¡Player 2 Conectado!', '¡Nuevo Récord!', '¡Nivel Superado!', '¡100% de Amor!'];
+
+            // PANTALLA 1 -> PANTALLA 2
+            function checkName() {
+                const enteredName = nameInput.value.trim().toLowerCase();
+                if (enteredName === 'hanni') {
+                    errorMessage.classList.remove('visible');
+                    welcomeScreen.classList.add('hidden');
+                    mainContent.classList.add('visible');
+                } else {
+                    errorMessage.classList.add('visible');
+                    nameInput.value = '';
+                }
+            }
+
+            btnStart.addEventListener('click', checkName);
+            nameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') checkName();
+            });
+
+            function typeWriter(text, element) {
+                element.textContent = '';
+                let i = 0;
+                function type() {
+                    if (i < text.length) {
+                        element.textContent += text.charAt(i);
+                        i++;
+                        setTimeout(type, 35);
+                    }
+                }
+                type();
+            }
+
+            function spawnFallingPixelHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'falling-pixel-heart';
+                heart.innerHTML = `<svg viewBox="0 0 9 9" fill="none"><path d="M2 1H4V2H2V1Z" fill="#000"/><path d="M5 1H7V2H5V1Z" fill="#000"/><path d="M1 2H2V4H1V2Z" fill="#000"/><path d="M4 2H5V3H4V2Z" fill="#000"/><path d="M7 2H8V4H7V2Z" fill="#000"/><path d="M0 3H1V5H0V3Z" fill="#000"/><path d="M8 3H9V5H8V3Z" fill="#000"/><path d="M1 5H2V6H1V5Z" fill="#000"/><path d="M7 5H8V6H7V5Z" fill="#000"/><path d="M2 6H3V7H2V6Z" fill="#000"/><path d="M6 6H7V7H6V6Z" fill="#000"/><path d="M3 7H4V8H3V7Z" fill="#000"/><path d="M5 7H6V8H5V7Z" fill="#000"/><path d="M4 8H5V9H4V8Z" fill="#000"/><path d="M2 2H4V3H2V2Z" fill="#8B0000"/><path d="M5 2H7V3H5V2Z" fill="#8B0000"/><path d="M1 3H8V5H1V3Z" fill="#8B0000"/><path d="M2 5H7V6H2V5Z" fill="#660000"/><path d="M3 6H6V7H3V6Z" fill="#660000"/><path d="M4 7H5V8H4V7Z" fill="#4A0000"/><path d="M2 2H3V3H2V2Z" fill="#FF6666"/><path d="M1 3H2V4H1V3Z" fill="#FF6666"/></svg>`;
+
+                const startX = Math.random() * 90 + 5;
+                const duration = 4 + Math.random() * 3;
+
+                heart.style.left = `${startX}vw`;
+                heart.style.animationDuration = `${duration}s`;
+
+                document.body.appendChild(heart);
+                setTimeout(() => heart.remove(), duration * 1000);
+            }
+
+            for (let i = 0; i < 4; i++) {
+                const block = document.createElement('div');
+                block.className = 'bg-block';
+                block.style.left = `${Math.random() * 90}vw`;
+                block.style.animationDuration = `${8 + Math.random() * 6}s`;
+                block.style.animationDelay = `${Math.random() * 3}s`;
+                document.body.appendChild(block);
+            }
+
+            function playXpSound() {
+                try {
+                    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+                    const now = audioCtx.currentTime;
+                    for (let i = 0; i < 3; i++) {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        const delay = i * 0.06;
+
+                        osc.frequency.setValueAtTime(600 + (i * 200), now + delay);
+                        gain.gain.setValueAtTime(0.15, now + delay);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + delay + 0.12);
+
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + delay);
+                        osc.stop(now + delay + 0.12);
+                    }
+                } catch (e) {}
+            }
+
+            btnMusic.addEventListener('click', () => {
+                if (bgMusic.paused) {
+                    bgMusic.play().then(() => {
+                        btnMusic.textContent = '🎵 BGM: ON';
+                    }).catch(() => {});
+                } else {
+                    bgMusic.pause();
+                    btnMusic.textContent = '🎵 BGM: OFF';
+                }
+            });
+
+            function createParticles() {
+                const rect = card.getBoundingClientRect();
+                const particleCount = 12;
+
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'xp-particle';
+
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 40 + Math.random() * 60;
+                    const dx = Math.cos(angle) * distance;
+                    const dy = Math.sin(angle) * distance;
+
+                    particle.style.left = `${rect.left + rect.width / 2}px`;
+                    particle.style.top = `${rect.top + rect.height / 2}px`;
+                    particle.style.width = '6px';
+                    particle.style.height = '6px';
+                    particle.style.backgroundColor = xpColors[Math.floor(Math.random() * xpColors.length)];
+                    particle.style.setProperty('--dx', `${dx}px`);
+                    particle.style.setProperty('--dy', `${dy}px`);
+
+                    document.body.appendChild(particle);
+                    setTimeout(() => particle.remove(), 800);
+                }
+            }
+
+            // PANTALLA 2 -> PANTALLA 3 (DESBLOQUEO)
+            function unlockAchievement() {
+                if (isUnlocked) {
+                    // Si ya está desbloqueado, pasa directo a la pantalla 3
+                    mainContent.classList.remove('visible');
+                    galleryScreen.classList.add('visible');
+                    return;
+                }
+                
+                isUnlocked = true;
+
+                flash.classList.add('active');
+                card.classList.add('unlocked');
+                xpBarFill.style.width = '100%';
+                counterText.textContent = 'DÍAS JUNTOS | XP 100%';
+
+                splashText.textContent = splashes[Math.floor(Math.random() * splashes.length)];
+
+                secretMsg.classList.add('visible');
+                setTimeout(() => typeWriter(fullText, typedText), 200);
+
+                playXpSound();
+                createParticles();
+
+                if (bgMusic.paused) {
+                    bgMusic.play().then(() => {
+                        btnMusic.textContent = '🎵 BGM: ON';
+                    }).catch(() => {});
+                }
+
+                setInterval(spawnFallingPixelHeart, 600);
+
+                // Cambia el texto del botón
+                btn.textContent = 'Ver Fotos 📷';
+
+                // Cambia automáticamente a la Pantalla 3 tras 2.5 segundos para apreciar la animación
+                setTimeout(() => {
+                    mainContent.classList.remove('visible');
+                    galleryScreen.classList.add('visible');
+                }, 2500);
+            }
+
+            btn.addEventListener('click', unlockAchievement);
+            card.addEventListener('click', unlockAchievement);
+
+            // VOLVER DE PANTALLA 3 A PANTALLA 2
+            btnBack.addEventListener('click', () => {
+                galleryScreen.classList.remove('visible');
+                mainContent.classList.add('visible');
+            });
+        });
+    </script>
+</body>
+</html>
